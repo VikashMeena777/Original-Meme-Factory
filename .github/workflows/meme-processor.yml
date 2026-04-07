@@ -1,0 +1,305 @@
+name: Original Meme Factory — Video Processor
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: 'Reddit video URL'
+        required: true
+      video_id:
+        description: 'Unique video ID'
+        required: true
+      reddit_title:
+        description: 'Reddit post title'
+        required: true
+      reddit_sub:
+        description: 'Subreddit name'
+        required: false
+        default: ''
+
+  repository_dispatch:
+    types: [process-video, process-image]
+
+jobs:
+  process-video:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'repository_dispatch' && github.event.action == 'process-video')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90  # Safety timeout per video
+
+    steps:
+      # ── Setup ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Cache HuggingFace models (Whisper base ~141MB - no BLIP needed, using Groq Vision)
+      - name: Cache HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-whisper-base-v3
+          restore-keys: |
+            hf-models-whisper-base-
+            hf-models-
+
+      # Cache Whisper model separately (stored in ~/.cache/whisper)
+      - name: Cache Whisper model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/whisper
+          key: whisper-base-v2
+
+      # Cache pip packages
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('scripts/requirements.txt') }}
+          restore-keys: pip-
+
+      # ── Install Dependencies ─────────────────────────────────────────
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          # Install fonts: DejaVu for Latin, Noto for Hindi/Devanagari/multilingual
+          sudo apt-get install -y fonts-dejavu-core fonts-liberation fonts-noto fonts-noto-cjk
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+
+      # ── Setup Cookies (for Reddit video downloads) ───────────────────
+      - name: Setup cookies
+        run: |
+          touch cookies.txt
+          if [ -n "${{ secrets.REDDIT_COOKIES }}" ]; then
+            COOKIES="${{ secrets.REDDIT_COOKIES }}"
+            
+            # Check if it looks like Netscape cookie format (starts with # or domain)
+            if echo "$COOKIES" | head -1 | grep -qE '^(#|\.reddit|reddit)'; then
+              echo "Cookies appear to be in plain text Netscape format"
+              echo "$COOKIES" > cookies.txt
+            else
+              # Try base64 decoding
+              echo "Trying base64 decode..."
+              echo "$COOKIES" | base64 -d > cookies.txt 2>/dev/null || {
+                echo "Base64 failed, using as plain text"
+                echo "$COOKIES" > cookies.txt
+              }
+            fi
+            
+            # Validate cookies file
+            COOKIE_LINES=$(grep -v '^#' cookies.txt | grep -v '^$' | wc -l)
+            echo "✅ Reddit cookies configured ($COOKIE_LINES cookie entries)"
+            
+            # Debug: show first line format (redacted)
+            head -1 cookies.txt | cut -c1-30
+          else
+            echo "⚠️ No REDDIT_COOKIES secret set — Reddit downloads will likely fail!"
+            echo "Add your Reddit cookies.txt content as REDDIT_COOKIES repository secret"
+          fi
+
+      # ── Set Video Info ───────────────────────────────────────────────
+      - name: Set video info from dispatch
+        id: video-info
+        run: |
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            echo "video_url=${{ github.event.client_payload.video_url }}" >> $GITHUB_OUTPUT
+            echo "reddit_video_url=${{ github.event.client_payload.reddit_video_url }}" >> $GITHUB_OUTPUT
+            echo "video_id=${{ github.event.client_payload.video_id }}" >> $GITHUB_OUTPUT
+            echo "reddit_title=${{ github.event.client_payload.reddit_title }}" >> $GITHUB_OUTPUT
+            echo "reddit_sub=${{ github.event.client_payload.reddit_sub }}" >> $GITHUB_OUTPUT
+          else
+            echo "video_url=${{ github.event.inputs.video_url }}" >> $GITHUB_OUTPUT
+            echo "reddit_video_url=" >> $GITHUB_OUTPUT
+            echo "video_id=${{ github.event.inputs.video_id }}" >> $GITHUB_OUTPUT
+            echo "reddit_title=${{ github.event.inputs.reddit_title }}" >> $GITHUB_OUTPUT
+            echo "reddit_sub=${{ github.event.inputs.reddit_sub }}" >> $GITHUB_OUTPUT
+          fi
+
+      # ── Run Processing Pipeline ──────────────────────────────────────
+      - name: Process video through meme pipeline
+        env:
+          VIDEO_URL: ${{ steps.video-info.outputs.video_url }}
+          REDDIT_VIDEO_URL: ${{ steps.video-info.outputs.reddit_video_url }}
+          VIDEO_ID: ${{ steps.video-info.outputs.video_id }}
+          REDDIT_TITLE: ${{ steps.video-info.outputs.reddit_title }}
+          REDDIT_SUB: ${{ steps.video-info.outputs.reddit_sub }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
+        run: |
+          python scripts/process_video.py
+
+      # ── Save Debug Output ────────────────────────────────────────────
+      - name: Upload processing output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meme-output-${{ steps.video-info.outputs.video_id }}
+          path: output/
+          retention-days: 7
+
+      # ── Cleanup ──────────────────────────────────────────────────────
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf work/
+          rm -f cookies.txt
+          echo "🧹 Cleanup complete"
+
+
+  # ── Batch Processing Job (process up to 3 videos) ────────────────────
+  batch-process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330  # 5.5 hours max for batch
+
+    # Only runs via repository_dispatch with batch type
+    if: github.event_name == 'repository_dispatch' && github.event.action == 'process-video-batch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-whisper-base-v3
+
+      - name: Cache Whisper model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/whisper
+          key: whisper-base-v2
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('scripts/requirements.txt') }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core fonts-liberation
+          pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+
+      - name: Setup cookies
+        run: |
+          touch cookies.txt
+          if [ -n "${{ secrets.REDDIT_COOKIES }}" ]; then
+            echo "${{ secrets.REDDIT_COOKIES }}" >> cookies.txt
+          fi
+
+      - name: Process batch of videos
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
+          VIDEOS_JSON: ${{ toJSON(github.event.client_payload.videos) }}
+        run: |
+          echo "Processing batch of videos..."
+          echo "$VIDEOS_JSON" | python -c "
+          import json, sys, os, subprocess
+
+          videos = json.load(sys.stdin)
+          max_videos = 3  # Safety limit
+
+          for i, video in enumerate(videos[:max_videos]):
+              print(f'\n🎬 Processing video {i+1}/{min(len(videos), max_videos)}')
+              env = os.environ.copy()
+              env['VIDEO_URL'] = video['video_url']
+              env['VIDEO_ID'] = video['video_id']
+              env['REDDIT_TITLE'] = video.get('reddit_title', '')
+              env['REDDIT_SUB'] = video.get('reddit_sub', '')
+
+              result = subprocess.run(
+                  ['python', 'scripts/process_video.py'],
+                  env=env, timeout=5400  # 90 min per video
+              )
+              if result.returncode != 0:
+                  print(f'  ⚠️ Video {video[\"video_id\"]} failed, continuing...')
+              # Clean work dir between videos
+              subprocess.run(['rm', '-rf', 'work/'])
+          "
+
+      - name: Upload all outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: batch-output
+          path: output/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf work/
+          rm -f cookies.txt
+
+
+  # ── Image Meme Processing Job ───────────────────────────────────────
+  process-image:
+    if: github.event.action == 'process-image'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # Images process fast (2-5 min)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-image-v2
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto fonts-noto-cjk fonts-dejavu-core
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install Pillow>=10.0.0 requests>=2.31.0
+
+      - name: Process image meme
+        env:
+          IMAGE_URL: ${{ github.event.client_payload.image_url }}
+          IMAGE_ID: ${{ github.event.client_payload.image_id }}
+          REDDIT_TITLE: ${{ github.event.client_payload.reddit_title }}
+          REDDIT_SUB: ${{ github.event.client_payload.reddit_sub }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
+        run: python scripts/process_image.py
+
+      - name: Upload processing output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-output-${{ github.event.client_payload.image_id }}
+          path: output/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf work/

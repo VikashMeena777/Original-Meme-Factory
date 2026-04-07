@@ -1,0 +1,16 @@
+# Original Meme Factory - Python Dependencies
+# For GitHub Actions (CPU only)
+
+# Video downloading
+yt-dlp>=2024.1.0
+
+# AI/ML Models (Whisper for video transcription)
+openai-whisper>=20231117
+Pillow>=10.0.0
+
+# PyTorch CPU-only (for Whisper only — saves ~2GB vs GPU version)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.1.0
+
+# API calls
+requests>=2.31.0
