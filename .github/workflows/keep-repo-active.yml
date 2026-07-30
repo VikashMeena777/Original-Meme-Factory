@@ -1,0 +1,25 @@
+name: Keep Repo Active
+
+on:
+  schedule:
+    # Runs every 50 days (before GitHub's 60-day disable threshold)
+    - cron: '0 0 1,21 * *'  # 1st and 21st of every month
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Update activity timestamp
+        run: |
+          echo "Last activity: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > .github/last-active.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/last-active.txt
+          git diff --quiet --cached || git commit -m "chore: keep repo active [skip ci]"
+          git push

@@ -1,0 +1,1621 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "cachedResultName": "Original Meme Factory",
+          "mode": "list",
+          "value": "1Px2bxsU__jS1518a8gGzrW279i18WtCIHcNXkcFNkKw"
+        },
+        "sheetName": {
+          "__rl": true,
+          "cachedResultName": "Publishing Queue",
+          "mode": "list",
+          "value": 919502662
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "PostedAt": "={{ $now }}",
+            "Status": "Published",
+            "ID": "={{ $('Get row(s) in sheet').item.json['ID'] }}"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Content Type",
+              "displayName": "Content Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Download URL",
+              "displayName": "Download URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Caption",
+              "displayName": "Caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PostedAt",
+              "displayName": "PostedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "3dd69d5b-01e1-4c35-8593-40fff0ad044b",
+      "name": "Mark Published",
+      "position": [
+        3712,
+        1088
+      ],
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1gz3DofInpV64qih",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $json.ig_node }}/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "media_type",
+              "value": "=REELS"
+            },
+            {
+              "name": "video_url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a7bdc58e-3d6d-4964-8dc1-5725959dfad1",
+      "name": "Container HTTP Reels",
+      "position": [
+        1536,
+        1040
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KIe1zzJ5zbQIyJzq",
+          "name": "Meme_Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "682def4c",
+              "leftValue": "={{ $json.status_code }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "FINISHED"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      },
+      "id": "1e732fde-7372-4423-b249-a813f1544eba",
+      "name": "Is Container Ready",
+      "position": [
+        2560,
+        736
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "da6bcb63",
+              "leftValue": "={{ $('Configure Post Settings').item.json.post_type }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "http"
+            },
+            {
+              "id": "88805380",
+              "leftValue": "={{ $('Configure Post Settings').item.json.post_type }}",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "both"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      },
+      "id": "8efbb207-4c3e-444e-a314-bacdfb3b15cd",
+      "name": "HTTP vs FB API Router",
+      "position": [
+        3120,
+        896
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $('Platform Router').item.json.ig_node }}/media_publish",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "33140da5-d370-4b0d-b0e7-90d3986b3663",
+      "name": "Publish via HTTP API",
+      "position": [
+        3344,
+        896
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KIe1zzJ5zbQIyJzq",
+          "name": "Meme_Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "1816ddd4-5a6b-45d7-87f8-4dae8af7ecc3",
+      "name": "Initial Processing Wait",
+      "position": [
+        2080,
+        832
+      ],
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "webhookId": "443f84eb-1e9d-4c77-9a9a-c70290333dca"
+    },
+    {
+      "parameters": {},
+      "id": "aef52094-44c0-4d67-8f3e-385f66a36667",
+      "name": "Retry Wait Loop",
+      "position": [
+        2784,
+        928
+      ],
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "webhookId": "e9ac0c1d-b415-4160-a6b1-908d2310cb23"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "37f96da8",
+              "name": "container_id",
+              "type": "string",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "69bdf629-e9d9-4fe5-8421-51341cdca797",
+      "name": "Store Container ID",
+      "position": [
+        1872,
+        832
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v22.0/{{ $('Store Container ID').item.json.container_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "status_code"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4b82dff8-dea9-41f9-95bd-d4ccd19b0cdf",
+      "name": "Check Processing Status",
+      "position": [
+        2304,
+        832
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "qs3GkSdpMqxSRHCd",
+          "name": "Meme_Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $json['Download URL'] }}"
+        },
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "id": "c571b41e-2b24-4335-b4cc-cf4eb8b42c90",
+      "name": "Download file",
+      "position": [
+        928,
+        992
+      ],
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "M1byh5wt23HVBgWj",
+          "name": "Pages Reels"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Get row(s) in sheet').item.json['Download URL'] }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "cachedResultName": "Posted Reels",
+          "mode": "list",
+          "value": "11bazG7cuBlJNMg1XMJs9_wwxq8Jc2h69"
+        }
+      },
+      "executeOnce": true,
+      "id": "f689afb3-98b5-4511-b664-30b0637771e3",
+      "name": "Move file",
+      "position": [
+        3520,
+        1088
+      ],
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "M1byh5wt23HVBgWj",
+          "name": "Pages Reels"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 4-22/4 * * *"
+            }
+          ]
+        }
+      },
+      "executeOnce": true,
+      "id": "f5f4bdfe-fc85-4256-9be2-49f7783e92c7",
+      "name": "Schedule Trigger",
+      "position": [
+        512,
+        992
+      ],
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uguu.se/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files[]",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "6759c9c4-80b5-422e-95b1-a40aca7db86b",
+      "name": "HTTP Request",
+      "position": [
+        512,
+        1248
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Download file').item.json.Title }}",
+        "regionCode": "IN",
+        "categoryId": "24",
+        "options": {
+          "description": "={{ $json.caption }}\n\n{{ $json.hashtags }}",
+          "notifySubscribers": true,
+          "privacyStatus": "public"
+        }
+      },
+      "id": "e406bad8-5914-488c-9c41-f390ba205985",
+      "name": "Upload a video",
+      "position": [
+        3344,
+        1296
+      ],
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "dNXwTShTddpOl4GY",
+          "name": "Meme Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('HTTP Request').item.json.body.files[0].url }}",
+        "options": {}
+      },
+      "id": "84f8f673-5c08-45b5-bcb2-47ce6d4ec074",
+      "name": "HTTP Request1",
+      "position": [
+        3120,
+        1296
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7ad4cdf6-e5e7-44fc-8e54-de3c2bc3fb40",
+                    "leftValue": "={{ $json.media_type }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Post"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3d12879e-d7c6-4e78-b526-1abb7d29a2e1",
+                    "leftValue": "={{ $json.media_type }}",
+                    "rightValue": "video",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reel"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dabb1404-f95c-4cb8-b7be-03225f97ba59",
+      "name": "Platform Router",
+      "position": [
+        1280,
+        1104
+      ],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "217b69e3",
+              "name": "ig_node",
+              "type": "string",
+              "value": "17841477781953815"
+            },
+            {
+              "id": "fb-page-id-001",
+              "name": "fb_page_id",
+              "type": "string",
+              "value": "917066534831563"
+            },
+            {
+              "id": "2caebe7c",
+              "name": "post_type",
+              "type": "string",
+              "value": "both"
+            },
+            {
+              "id": "6e2c9c54",
+              "name": "caption",
+              "type": "string",
+              "value": "={{ $json.caption }}\n\n{{ $json.hashtags }}"
+            },
+            {
+              "id": "32aa1561",
+              "name": "url",
+              "type": "string",
+              "value": "={{ $('HTTP Request').item.json.body.files[0].url }}"
+            },
+            {
+              "id": "media-type-detect",
+              "name": "media_type",
+              "type": "string",
+              "value": "={{ $json.media_type }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "80a64785-c77d-40d3-a520-00b4b9cb258d",
+      "name": "Configure Post Settings",
+      "position": [
+        928,
+        1248
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $json.fb_page_id }}/video_reels",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "upload_phase",
+              "value": "start"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2949c86e-3d07-4439-94f6-43e1aabba84f",
+      "name": "FB Start Upload",
+      "position": [
+        1536,
+        1216
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KIe1zzJ5zbQIyJzq",
+          "name": "Meme_Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "b3e7e36c-fc05-4b79-a774-46333b2532aa",
+      "name": "FB Processing Wait",
+      "position": [
+        2080,
+        1504
+      ],
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "webhookId": "fb-wait-webhook-001"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v22.0/{{ $('Store FB Video ID').item.json.fb_video_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "status"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb1b8b72-317a-444a-bf08-17587bef2a2c",
+      "name": "Check FB Status",
+      "position": [
+        2352,
+        1328
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "qs3GkSdpMqxSRHCd",
+          "name": "Meme_Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "fb-ready",
+              "leftValue": "={{ $json.status.video_status }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "ready"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      },
+      "id": "0b0cd38d-e722-4b93-ad12-8689491c2085",
+      "name": "FB Video Ready",
+      "position": [
+        2592,
+        1264
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {},
+      "id": "c653a865-8771-429b-a897-688ae8b8f9e2",
+      "name": "FB Retry Wait",
+      "position": [
+        2816,
+        1456
+      ],
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "webhookId": "fb-retry-webhook-001"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $('Store FB Video ID').item.json.fb_video_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "is_published",
+              "value": "true"
+            },
+            {
+              "name": "video_state",
+              "value": "PUBLISHED"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8a041af5-021b-4eef-80f4-0241ee392810",
+      "name": "Publish to Facebook",
+      "position": [
+        3232,
+        1088
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KIe1zzJ5zbQIyJzq",
+          "name": "Meme_Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fb-vid-001",
+              "name": "fb_video_id",
+              "type": "string",
+              "value": "={{ $json.video_id }}"
+            },
+            {
+              "id": "fb-url-001",
+              "name": "upload_url",
+              "type": "string",
+              "value": "={{ $json.upload_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "66c66e84-b089-488e-bf00-9443839832f3",
+      "name": "Store FB Video ID",
+      "position": [
+        1888,
+        1280
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Store FB Video ID').item.json.upload_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "file_url",
+              "value": "={{ $('Configure Post Settings').item.json.url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "12092045-a3b5-41f1-8558-e384aa0a84f2",
+      "name": "FB Upload Video",
+      "position": [
+        2080,
+        1280
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KIe1zzJ5zbQIyJzq",
+          "name": "Meme_Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $('Configure Post Settings').item.json.fb_page_id }}/video_reels",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "upload_phase",
+              "value": "finish"
+            },
+            {
+              "name": "video_id",
+              "value": "={{ $('Store FB Video ID').item.json.fb_video_id }}"
+            },
+            {
+              "name": "video_state",
+              "value": "PUBLISHED"
+            },
+            {
+              "name": "description",
+              "value": "={{ $('Configure Post Settings').item.json.caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6565d625-e47f-4e0e-be73-9efedf2efd32",
+      "name": "FB Finish Upload",
+      "position": [
+        1888,
+        1504
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KIe1zzJ5zbQIyJzq",
+          "name": "Meme_Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Facebook Posting Process",
+        "height": 496,
+        "width": 1152
+      },
+      "id": "ca4724a9-4abd-49ee-b211-703b6244df82",
+      "name": "Sticky Note1",
+      "position": [
+        1824,
+        1184
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "cachedResultName": "Original Meme Factory",
+          "mode": "list",
+          "value": "1Px2bxsU__jS1518a8gGzrW279i18WtCIHcNXkcFNkKw"
+        },
+        "sheetName": {
+          "__rl": true,
+          "cachedResultName": "Publishing Queue",
+          "mode": "list",
+          "value": 919502662
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "ready"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "id": "8419cc2a-e6b3-416c-b3ce-c35f6ffde983",
+      "name": "Get row(s) in sheet",
+      "position": [
+        720,
+        992
+      ],
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1gz3DofInpV64qih",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get caption/metadata from the Google Sheets row\nconst driveData = $('Get row(s) in sheet').first().json;\n\n// Get file URL from the HTTP upload node (uguu.se)\nconst httpData = $('HTTP Request').first().json;\nconst uploadedUrl = httpData.body.files[0].url;\n\nconst fullText = driveData['Caption'] || '';\nconst hashtagsMatch = fullText.match(/#[\\\\w]+/g) || [];\nconst captionText = fullText.replace(/#[\\\\w]+/g, '').trim();\n\n// Use 'Content Type' field from Sheets\nconst contentType = (driveData['Content Type'] || '').toLowerCase();\nconst isVideo = contentType === 'video';\n\nreturn [{\n  json: {\n    caption: captionText,\n    hashtags: hashtagsMatch.join(' '),\n    media_type: isVideo ? 'video' : 'image',\n    uploaded_url: uploadedUrl,\n    name: driveData['ID'] || ''\n  }\n}];"
+      },
+      "id": "22c11eb2-5700-4c9d-8d7e-826d6f491aeb",
+      "name": "Code in JavaScript",
+      "position": [
+        720,
+        1248
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "content": "## 🎵 Instagram/Facebook Upload",
+        "height": 796,
+        "width": 480
+      },
+      "id": "2bd8dcf0-9318-47d4-889e-c9f49f6dd79a",
+      "name": "Sticky Note3",
+      "position": [
+        1232,
+        768
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Variable and Routing Setup",
+        "height": 640,
+        "width": 712,
+        "color": 3
+      },
+      "id": "b338d567-a876-4328-bdc3-38a7bfc96109",
+      "name": "Sticky Note5",
+      "position": [
+        416,
+        848
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Container Processing Pipeline",
+        "height": 540,
+        "width": 1140,
+        "color": 6
+      },
+      "id": "44e7acc8-2c5e-45f4-871e-d4bd061d6a1c",
+      "name": "Sticky Note6",
+      "position": [
+        1824,
+        608
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Smart Publishing System",
+        "height": 796,
+        "width": 820,
+        "color": 4
+      },
+      "id": "f215ed3f-10b4-4870-9529-27bc852cd89f",
+      "name": "Sticky Note7",
+      "position": [
+        3056,
+        752
+      ],
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $json.node }}/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.image_url }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        1840
+      ],
+      "id": "051228ec-9030-47cc-90d7-98fde6742b76",
+      "name": "Container Carousel Image 1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rti2tP6AUQ8pL8fz",
+          "name": "Wood.Finesse"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $('🔀 Smart Content Router').item.json.node }}/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "=https://4.img-dpreview.com/files/p/TC190x190S190x190~sample_galleries/0890568360/4504013564.jpg"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $('🔀 Smart Content Router').item.json.caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1424,
+        1840
+      ],
+      "id": "567ed751-5264-4802-a589-5b4fa10ce7a5",
+      "name": "Container Carousel Image 2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rti2tP6AUQ8pL8fz",
+          "name": "Wood.Finesse"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $('🔀 Smart Content Router').item.json.node }}/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "children",
+              "value": "={{ $('Container Carousel Image 1').item.json.id }}, {{ $json.id }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $('🔀 Smart Content Router').item.json.caption }}"
+            },
+            {
+              "name": "media_type",
+              "value": "CAROUSEL"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1648,
+        1840
+      ],
+      "id": "c37b3ce5-dfec-4a1e-bff2-e278345d2f67",
+      "name": "Container HTTP Carousel",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rti2tP6AUQ8pL8fz",
+          "name": "Wood.Finesse"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 🖼️ Carousel Post (Multiple Images)",
+        "height": 220,
+        "width": 860
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        1776
+      ],
+      "id": "b9b6375e-1edc-4318-8fca-91db1d4f076c",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $json.ig_node }}/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1536,
+        864
+      ],
+      "id": "ff54f41f-bae9-4b13-9eba-1a1b4c282bcd",
+      "name": "Container HTTP Image1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KIe1zzJ5zbQIyJzq",
+          "name": "Meme_Facteory"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v22.0/{{ $('Configure Post Settings').item.json.fb_page_id }}/photos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $('Configure Post Settings').item.json.url }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $('Configure Post Settings').item.json.caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb-img-post-001",
+      "name": "FB Post Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1536,
+        1408
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KIe1zzJ5zbQIyJzq",
+          "name": "Meme_Facteory"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Mark Published": {
+      "main": [
+        []
+      ]
+    },
+    "Container HTTP Reels": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Store Container ID",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Is Container Ready": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "HTTP vs FB API Router",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Retry Wait Loop",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "HTTP vs FB API Router": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Publish via HTTP API",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Publish via HTTP API": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Move file",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Initial Processing Wait": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Check Processing Status",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Retry Wait Loop": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Check Processing Status",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Store Container ID": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Initial Processing Wait",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Check Processing Status": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Is Container Ready",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move file": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Mark Published",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get row(s) in sheet",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a video": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Move file",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Upload a video",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Platform Router": {
+      "main": [
+        [
+          {
+            "node": "Container HTTP Image1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FB Post Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Container HTTP Reels",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FB Start Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Post Settings": {
+      "main": [
+        [
+          {
+            "node": "Platform Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FB Start Upload": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Store FB Video ID",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "FB Processing Wait": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Check FB Status",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Check FB Status": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "FB Video Ready",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "FB Video Ready": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Publish to Facebook",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "FB Retry Wait",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "FB Retry Wait": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Check FB Status",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Publish to Facebook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Move file",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Store FB Video ID": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "FB Upload Video",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "FB Upload Video": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "FB Finish Upload",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "FB Finish Upload": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "FB Processing Wait",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Download file",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Configure Post Settings",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "HTTP Request1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Container Carousel Image 1": {
+      "main": [
+        [
+          {
+            "node": "Container Carousel Image 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Container Carousel Image 2": {
+      "main": [
+        [
+          {
+            "node": "Container HTTP Carousel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Container HTTP Carousel": {
+      "main": [
+        []
+      ]
+    },
+    "Container HTTP Image1": {
+      "main": [
+        [
+          {
+            "node": "Store Container ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FB Post Image": {
+      "main": [
+        [
+          {
+            "node": "Move file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "260ed10ca7527eef1744f6416cc66abd26c4fd51c36b77a8b51c7f7491d8e75e"
+  }
+}
